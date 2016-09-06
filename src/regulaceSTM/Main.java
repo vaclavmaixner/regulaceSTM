@@ -1,36 +1,77 @@
 package regulaceSTM;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 
 public class Main {
 	public static void main(String[] args) throws IOException {
-		final double kp = 4; // konstanty proporcni, integracni, derivacni
-		final double ki = 3;
+		final double kp = 0.3; // konstanty proporcni, integracni, derivacni
+		final double ki = 12;
 		final double kd = 0;
+		final double Setpoint = 10;
+		String evaluateResult = null;
 
 		Pid pid1 = new Pid();
-		double input = 7;
+		double input = 8;
 
-		// DataOutputStream dataOut = new DataOutputStream(new FileOutputStream(
-		// "test.txt"));
+		// vytvorit jmeno souboru do ktereho ulozime data, aby byly zpetne
+		// dohledatelne pocatecni podminky "results/" +
+		final String nameOfFile = Double.toString(kp) + "_"
+				+ Double.toString(ki) + "_" + Double.toString(kd) + "_"
+				+ Double.toString(input) + ".txt";
+		System.out.println("results/" + nameOfFile);
 
-		PrintWriter out = new PrintWriter("results2.txt");
+		PrintWriter out = new PrintWriter("results/" + nameOfFile);
 
 		for (int i = 1; i <= 200; i++) {
-			System.out.print(i + " "); // vytiskne pro gnuplot poradnik
-			System.out.println(pid1.solve(kp, ki, kd, input));
+			Double pidOutput = (pid1.solve(kp, ki, kd, input, Setpoint));
+			Double previousPidOutput;
+			// if (i == 1) {
+			// previousPidOutput = pidOutput;
+			// }
 
-			// prevede neobratne output
-			Double output2 = (pid1.solve(kp, ki, kd, input));
-			String output3 = Double.toString(output2);
+			// vola evaluaci dat - oscilace a jine
+			Output output1 = new Output();
+			evaluateResult = output1.evaluateOutput(pidOutput, i, Setpoint);
+
+			System.out.print(i + " "); // vytiskne pro gnuplot poradnik
+			System.out.println(pidOutput);
+
+			// prevede output na string
+			String outputAsString = Double.toString(pidOutput);
+
 			// print to file
-			out.println(i + " " + output3);
+			out.println(i + " " + outputAsString);
+
+			// ulozi si predchozi output pro porovnani
+			previousPidOutput = pidOutput;
 
 			// znovu vola sebe samu s outputem jako novou, aktualni hodnotou,
 			// tedy inputem
-			input = pid1.solve(kp, ki, kd, input);
+			input = pidOutput;
 		}
 		out.close();
+
+		System.out.println(evaluateResult);
+		// prejmenovani souboru podle toho, jestli osciluje
+		// "results/test.txt"
+
+		// File (or directory) with old name
+		File file = new File("results/" + nameOfFile);
+
+		// File (or directory) with new name
+		File file2 = new File("results/" + evaluateResult + nameOfFile);
+
+		if (file2.exists())
+			throw new java.io.IOException("file exists");
+
+		// Rename file (or directory)
+		boolean success = file.renameTo(file2);
+
+		if (!success) {
+			// File was not successfully renamed
+		}
+
 	}
 }

@@ -9,10 +9,11 @@ public class Pid {
 	private double deltaTime;
 	private double previousError;
 
-	public double solve(double kp, double ki, double kd, double Input) {
+	public double solve(double kp, double ki, double kd, double Input,
+			double Setpoint) {
 		// inicializace
 		deltaTime = 0.1;
-		Setpoint = 8;
+		// Setpoint = 8;
 
 		// Spocitat error
 		double error = (Setpoint - Input);
