@@ -2,28 +2,29 @@ package regulaceSTM;
 
 public class Output {
 	Integer oscillationCounter;
-	String oscillate = "-";
 	String exceedSetpoint = "-";
 	String failToReachSetpoint = "-";
 
 	public String evaluateOutput(double pidOutput, int i, double Setpoint) {
-		// evaluateOscillation(previousPidOutput, pidOutput);
-
-		// if (oscillationCounter >= 3) {
-		// oscillate = "s";
-		// }
-
+		double deviation = (pidOutput - Setpoint);
 		if (pidOutput > Setpoint) {
 			exceedSetpoint = "x";
 		}
 
-		double deviation = (pidOutput - Setpoint);
 		if ((i > 100) && ((absDeviation(deviation))) > (Setpoint / 100)) {
 			failToReachSetpoint = "f";
 		}
 
-		String prefix = oscillate + exceedSetpoint + failToReachSetpoint;
+		String prefix = exceedSetpoint + failToReachSetpoint;
 		return prefix;
+	}
+
+	public String evaluateOscillation(double previousPidOutput, double pidOutput) {
+		String oscillationString = "-";
+		if (absDeviation(previousPidOutput) > absDeviation(pidOutput)) {
+			oscillationString = "s";
+		}
+		return oscillationString;
 	}
 
 	// absolutni hodnota z devation

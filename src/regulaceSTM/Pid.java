@@ -1,9 +1,9 @@
 package regulaceSTM;
 
 public class Pid {
-	private double Input; // merena aktualni hodnota
+	// private double Input; // merena aktualni hodnota
 	private double Output; // vysledek, vydana hodnota po regulaci
-	private double Setpoint; // setpoint je pozadovana, referencni hodnota
+	// private double Setpoint; // setpoint je pozadovana, referencni hodnota
 	private double errorSum;
 	private double time;
 	private double deltaTime;
@@ -13,7 +13,6 @@ public class Pid {
 			double Setpoint) {
 		// inicializace
 		deltaTime = 0.1;
-		// Setpoint = 8;
 
 		// Spocitat error
 		double error = (Setpoint - Input);
