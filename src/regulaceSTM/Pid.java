@@ -10,7 +10,7 @@ public class Pid {
 	private double previousError;
 
 	public double solve(double kp, double ki, double kd, double Input,
-			double Setpoint) {
+			double Setpoint, double kc) {
 		// inicializace
 		deltaTime = 0.1;
 
@@ -33,6 +33,19 @@ public class Pid {
 		time += deltaTime;
 		// System.out.println("The time is " + time);
 
+		// ****** zkonvertovat output na proud
+
+		// Output = convertCurrentToZ(Output, kc);
 		return Output;
+	}
+
+	public double convertZToCurrent(double z, double kc) {
+		double current = 1 / (Math.exp(kc * z));
+		return current;
+	}
+
+	public double convertCurrentToZ(double current, double kc) {
+		double z = Math.log(1 / current) / (kc);
+		return z;
 	}
 }
