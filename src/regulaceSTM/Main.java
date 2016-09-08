@@ -14,9 +14,12 @@ public class Main {
 		int speed = 1;
 
 		Pid pid1 = new Pid();
-		double levelCurrent = 5; // mel by byt v jednotkach proudu
-		double inputCurrent = 0; // pocet kroku
+
+		double levelCurrent = 0.6; // v jednotkach proudu
 		double level = pid1.convertCurrentToZ(levelCurrent, kc);
+		System.out.println("level je " + level);
+
+		double inputCurrent = 0; // pocet kroku
 		double input = pid1.convertCurrentToZ(inputCurrent, kc);
 
 		String evaluateResult = null;
@@ -33,7 +36,8 @@ public class Main {
 		System.out.println(nameOfFile);
 
 		// inicializace writeru, ktery pise do souboru
-		PrintWriter out = new PrintWriter("results2/" + nameOfFile);
+		// PrintWriter out = new PrintWriter("results2/" + nameOfFile);
+		PrintWriter out = new PrintWriter("results2/test.txt");
 
 		// cyklus
 		Double previousPidOutput = 0.0;
@@ -42,23 +46,28 @@ public class Main {
 		// pracujeme v nanometrech
 		for (int i = 1; i <= numberOfSteps; i += speed) {
 			double Setpoint = (((1d / 30d) * Math.sin((60 / 3.14) * i)) + levelCurrent);
-			double SetpointDistance = (((1d / 30d) * Math.sin((60 / 3.14) * i)) + levelCurrent);
+			double SetpointDistance = (((1d / 30d) * Math.sin((60 / 3.14) * i)) + level);
 			// pred predanim solve se prevedou vzdalenosti na proud
 			Double pidOutput = (pid1.solve(kp, ki, kd, inputCurrent, Setpoint,
 					kc));
 
+			// System.out.println("Hodnoty jsou ****   " + pidOutput);
 			Double distance = pid1.convertCurrentToZ(pidOutput, kc);
-			Double position = distance + SetpointDistance;
 
-			System.out.println("lalala " + SetpointDistance);
+			// System.out.println("Hodnoty jsou ****   " + distance);
+
+			// *********
+			Double position = SetpointDistance + distance;
+
+			// System.out.println("lalala " + SetpointDistance);
 
 			// schod
 			if (i == (numberOfSteps / 100) * 40) {
-				levelCurrent += (1d / 3d);
+				level += (1d / 3d);
 			}
 
 			else if (i == ((numberOfSteps / 100) * 60)) {
-				levelCurrent -= (1d / 3d);
+				level -= (1d / 3d);
 			}
 
 			// vola evaluaci dat - oscilace a jine
