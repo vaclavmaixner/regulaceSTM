@@ -16,6 +16,7 @@ public class Pid {
 
 		// Spocitat error
 		double error = (Setpoint - Input);
+		// System.out.println("Error je " + error + " s konstantou " + kp);
 
 		// Pricist error do error sum
 		errorSum += (error * deltaTime);
