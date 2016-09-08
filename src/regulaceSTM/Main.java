@@ -2,6 +2,7 @@ package regulaceSTM;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Random;
 
 public class Main {
 	public static void main(String[] args) throws IOException {
@@ -12,7 +13,7 @@ public class Main {
 		// double level = 5; // mel by byt v jednotkach proudu ****************
 		double numberOfSteps = 2000; // pocet kroku
 		int speed = 1;
-		final boolean overlap = false;
+		final boolean overlap = true;
 
 		Pid pid1 = new Pid();
 
@@ -58,6 +59,7 @@ public class Main {
 		// zavest chybovy proud - kdyz klesa do diry, tak se proud snizi a
 		// naopak
 
+		boolean moleculePresent = false;
 		// pracujeme v nanometrech
 		for (int i = 1; i <= numberOfSteps; i += speed) {
 			// schod
@@ -69,12 +71,60 @@ public class Main {
 				level -= (1d / 3d);
 			}
 
+			// korugace povrchu
 			double SetpointDistance = (((1d / 30d) * Math.sin((60 / 3.14) * i)) + level);
-			// double zDistance = input - SetpointDistance;
-			// double zCurrent = pid1.convertZToCurrent(zDistance, kc);
+			// vyvyseni zpusobene molekulou
+			double SetpointDistanceWithMolecule = level + 0.1;
+			// ulozeni puvodni urovne povrchu
+			double SetpointDistanceWithoutMolecule = SetpointDistance;
+
+			// usek nahodneho vyskytu castice
+			// if ((i >= 700) && (i < 800)) {
+			// if (moleculePresent == false) {
+			// Random rnA = new Random();
+			// int chanceOfAppearance = rnA.nextInt(10);
 			//
-			// double Setpoint = (zCurrent - pid1.convertZToCurrent(
-			// SetpointDistance, kc));
+			// if (chanceOfAppearance == 1) {
+			// SetpointDistance = SetpointDistanceWithMolecule;
+			// moleculePresent = true;
+			// }
+			// System.out.println("molekula uvnitr" + moleculePresent);
+			// } else if (moleculePresent == true) {
+			// Random rnD = new Random();
+			// int chanceOfDisappearance = rnD.nextInt(10);
+			//
+			// if (chanceOfDisappearance == 1) {
+			// SetpointDistance = SetpointDistanceWithoutMolecule;
+			// moleculePresent = false;
+			// } else {
+			// moleculePresent = true;
+			// }
+			// }
+			// }
+
+			if (i >= 700 && i < 800) {
+				if (moleculePresent == false) {
+					Random randomGenerator = new Random();
+					int randomInt = randomGenerator.nextInt(2);
+
+					if (randomInt == 0) {
+						moleculePresent = true;
+						SetpointDistance = SetpointDistanceWithMolecule;
+					}
+				} else if (moleculePresent == true) {
+					SetpointDistance = SetpointDistanceWithMolecule;
+
+					Random randomGenerator = new Random();
+					int randomInt = randomGenerator.nextInt(8);
+
+					if (randomInt == 0) {
+						moleculePresent = false;
+						SetpointDistance = SetpointDistanceWithoutMolecule;
+					}
+				}
+			}
+
+			System.out.println("molekula " + moleculePresent);
 
 			double Setpoint = pid1.convertZToCurrent(SetpointDistance, kc);
 
