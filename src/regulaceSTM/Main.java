@@ -6,11 +6,11 @@ import java.util.Random;
 
 public class Main {
 	public static void main(String[] args) throws IOException {
-		final double kp = 0.2; // konstanty proporcni, integracni, derivacni
-		final double ki = 2;
+		final double kp = 0.21; // konstanty proporcni, integracni, derivacni
+								// 0.7 a 4 je velke kmitani
+		final double ki = 4;
 		final double kd = 0;
 		final double kc = 1;
-		// double level = 5; // mel by byt v jednotkach proudu ****************
 		double numberOfSteps = 2000; // pocet kroku
 		int speed = 1;
 		final boolean overlap = true;
@@ -29,8 +29,6 @@ public class Main {
 		// double input = pid1.convertCurrentToZ(inputCurrent, kc);
 
 		String evaluateResult = null;
-
-		// double input = 0; ****************
 
 		// vytvorit jmeno souboru do ktereho ulozime data, aby byly zpetne
 		// dohledatelne pocatecni podminky
@@ -60,6 +58,8 @@ public class Main {
 		// naopak
 
 		boolean moleculePresent = false;
+
+		// hlavni smycka
 		// pracujeme v nanometrech
 		for (int i = 1; i <= numberOfSteps; i += speed) {
 			// schod
@@ -74,38 +74,16 @@ public class Main {
 			// korugace povrchu
 			double SetpointDistance = (((1d / 30d) * Math.sin((60 / 3.14) * i)) + level);
 			// vyvyseni zpusobene molekulou
-			double SetpointDistanceWithMolecule = level + 0.1;
+			double SetpointDistanceWithMolecule = (((1d / 30d) * Math
+					.sin((0.01) * i)) + level) + 0.1;
 			// ulozeni puvodni urovne povrchu
 			double SetpointDistanceWithoutMolecule = SetpointDistance;
 
 			// usek nahodneho vyskytu castice
-			// if ((i >= 700) && (i < 800)) {
-			// if (moleculePresent == false) {
-			// Random rnA = new Random();
-			// int chanceOfAppearance = rnA.nextInt(10);
-			//
-			// if (chanceOfAppearance == 1) {
-			// SetpointDistance = SetpointDistanceWithMolecule;
-			// moleculePresent = true;
-			// }
-			// System.out.println("molekula uvnitr" + moleculePresent);
-			// } else if (moleculePresent == true) {
-			// Random rnD = new Random();
-			// int chanceOfDisappearance = rnD.nextInt(10);
-			//
-			// if (chanceOfDisappearance == 1) {
-			// SetpointDistance = SetpointDistanceWithoutMolecule;
-			// moleculePresent = false;
-			// } else {
-			// moleculePresent = true;
-			// }
-			// }
-			// }
-
 			if (i >= 700 && i < 800) {
 				if (moleculePresent == false) {
 					Random randomGenerator = new Random();
-					int randomInt = randomGenerator.nextInt(2);
+					int randomInt = randomGenerator.nextInt(8);
 
 					if (randomInt == 0) {
 						moleculePresent = true;
@@ -124,14 +102,17 @@ public class Main {
 				}
 			}
 
-			System.out.println("molekula " + moleculePresent);
-
 			double Setpoint = pid1.convertZToCurrent(SetpointDistance, kc);
 
 			// System.out.println("Rozdil je " + Setpoint + inputCurrent);
 
 			// pred predanim solve se prevedou vzdalenosti na proud
 			pidOutput = (pid1.solve(kp, ki, kd, inputCurrent, Setpoint, kc));
+
+			// Random randomGenerator = new Random();
+			// int randomInt = (randomGenerator.nextInt(2) + 1);
+			// double fuzzy = 1 / (0.5 * randomInt);
+			// pidOutput += fuzzy;
 
 			// System.out.println("Hodnoty jsou ****   " + pidOutput);
 			Double distance = pid1.convertCurrentToZ(pidOutput, kc);
@@ -145,8 +126,6 @@ public class Main {
 				position = position - SetpointDistance;
 			}
 
-			// System.out.println("lalala " + SetpointDistance);
-
 			// vola evaluaci dat - oscilace a jine
 			Output output1 = new Output();
 			evaluateResult = output1.evaluateOutput(pidOutput, i, Setpoint);
@@ -154,9 +133,6 @@ public class Main {
 			// konzolovej output
 			System.out.print(i + " "); // vytiskne pro gnuplot poradnik
 			System.out.println((position) + " " + SetpointDistance);
-
-			// prevede output na string
-			String outputAsString = Double.toString(pidOutput);
 
 			// print to file
 			out.println(i + " " + position + " " + SetpointDistance);
@@ -166,6 +142,11 @@ public class Main {
 
 			// znovu vola sebe samu s outputem jako novou, aktualni hodnotou,
 			// tedy inputem
+
+			// if (randomInt != 0) {
+			// pidOutput -= fuzzy;
+			// }
+
 			inputCurrent = pidOutput;
 
 			// oscillation = output1.evaluateOscillation(previousPidOutput,
