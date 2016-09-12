@@ -6,9 +6,9 @@ import java.util.Random;
 
 public class Main {
 	public static void main(String[] args) throws IOException {
-		final double kp = 0; // konstanty proporcni, integracni, derivacni
+		final double kp = 0.2; // konstanty proporcni, integracni, derivacni
 								// 0.7 a 4 je velke kmitani
-		final double ki = 4;
+		final double ki = 0.7;
 		final double kd = 0;
 		final double kc = 1;
 		int iterations = 20;
@@ -17,22 +17,27 @@ public class Main {
 		int step = 1;
 
 		boolean overlap = true;
-		boolean whiteNoise = false;
+		boolean whiteNoise = true;
 		boolean filter = false;
-		boolean average = false;
+		boolean average = true;
+		boolean averageCurrent = true;
 		int filterFrequency = 1;
 
 		if (filter == true) {
 			step = filterFrequency;
 		}
+
 		double numberOfSteps = iterations * pixels; // pocet kroku
+
+		// nove promenne
+		double heightOfTip = 17;
+		double setpointCurrentF = 0.5;
 
 		Pid pid1 = new Pid();
 
 		double levelCurrent = 7; // v jednotkach proudu
 		// double level = pid1.convertCurrentToZ(levelCurrent, kc);
 		double level = 1;
-		System.out.println("level je " + level);
 		double levelPrevious = level;
 		double levelHeightened = (level + (1d / 3d));
 
@@ -44,6 +49,7 @@ public class Main {
 
 		// *****
 		double averageOutputCounter = 0;
+		double averageCurrentCounter = 0;
 
 		// vytvorit jmeno souboru do ktereho ulozime data, aby byly zpetne
 		// dohledatelne pocatecni podminky
@@ -75,6 +81,7 @@ public class Main {
 
 		boolean moleculePresent = false;
 		int counter = 0;
+		double SetpointCurrent = 0.3;
 
 		// hlavni smycka
 		// pracujeme v nanometrech
@@ -97,6 +104,10 @@ public class Main {
 			double SetpointDistanceWithMolecule = level + moleculeHeight;
 			// ulozeni puvodni urovne povrchu
 			double SetpointDistanceWithoutMolecule = SetpointDistance;
+
+			// nove promenne
+			double distanceF = heightOfTip - SetpointDistance;
+			double inputCurrentF = pid1.convertZToCurrent(distanceF, kc);
 
 			// usek nahodneho vyskytu castice
 			if (i >= Math.round((numberOfSteps / 100) * 35)
@@ -124,10 +135,17 @@ public class Main {
 
 			}
 
-			double Setpoint = pid1.convertZToCurrent(SetpointDistance, kc);
+			// double SetpointCurrent = pid1.convertZToCurrent(SetpointDistance,
+			// kc);
 
 			// pred predanim solve se prevedou vzdalenosti na proud
-			pidOutput = (pid1.solve(kp, ki, kd, inputCurrent, Setpoint, kc));
+			pidOutput = (pid1.solve(kp, ki, kd, inputCurrentF,
+					setpointCurrentF, kc));
+
+			// double SetpointCurrentFinal = 4;
+			// double inputCurrentFinal = heightOfTip + SetpointDistance;
+			// double currentFinal = pid1.solve(kp, ki, kd, inputCurrentFinal,
+			// SetpointCurrentFinal, kc);
 
 			// white noise of current, up to 10 %
 			if (whiteNoise == true) {
@@ -142,23 +160,18 @@ public class Main {
 				}
 			}
 
-			// vytiskne proud do souboru
-			outCurrent.println(j + " " + (pidOutput + 0.63));
-
 			Double distance = pid1.convertCurrentToZ(pidOutput, kc);
 
 			Double position = SetpointDistance + distance;
-
-			if (overlap) {
-				position = position - SetpointDistance;
-			}
+			heightOfTip = position;
 
 			// ruzne druhy vystupu
 			if (filter == false && average == false) {
 
 				System.out.println(j + " " + position + " " + SetpointDistance);
-				out.println(j + " " + position);
+				out.println(j + " " + (position));
 				outSurface.println(j + " " + SetpointDistance);
+
 			} else if (filter == false && average == true) {
 				averageOutputCounter += position;
 				outSurface.println(j + " " + SetpointDistance);
@@ -185,6 +198,21 @@ public class Main {
 
 					averageOutputCounter = 0;
 				}
+			}
+
+			if (averageCurrent == true) {
+				averageCurrentCounter += pidOutput;
+
+				if ((counter) % (20) == 0) {
+					double pidOutputCurrent = averageCurrentCounter / 20;
+
+					// print to file
+					outCurrent.println(i + " " + pidOutputCurrent);
+					averageCurrentCounter = 0;
+				}
+			} else if (averageCurrent == false) {
+				// vytiskne proud do souboru
+				outCurrent.println(j + " " + (pidOutput));
 			}
 
 			// if (randomInt != 0) {
