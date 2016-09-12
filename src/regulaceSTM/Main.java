@@ -142,13 +142,8 @@ public class Main {
 				}
 			}
 
-			// Random randomGenerator = new Random();
-			// int randomInt = (randomGenerator.nextInt(2) + 1);
-			// double fuzzy = 1 / (0.5 * randomInt);
-			// pidOutput += fuzzy;
-
-			// vytiskne proud
-			outCurrent.println(j + " " + pidOutput);
+			// vytiskne proud do souboru
+			outCurrent.println(j + " " + (pidOutput + 0.63));
 
 			Double distance = pid1.convertCurrentToZ(pidOutput, kc);
 
@@ -158,9 +153,7 @@ public class Main {
 				position = position - SetpointDistance;
 			}
 
-			// vola evaluaci dat - oscilace a jine
-			// evaluateResult = output1.evaluateOutput(pidOutput, i, Setpoint);
-
+			// ruzne druhy vystupu
 			if (filter == false && average == false) {
 
 				System.out.println(j + " " + position + " " + SetpointDistance);
