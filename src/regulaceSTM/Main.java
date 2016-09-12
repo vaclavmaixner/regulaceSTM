@@ -13,13 +13,19 @@ public class Main {
 		final double kc = 1;
 		int iterations = 20;
 		double pixels = 512;
-		double numberOfSteps = iterations * pixels; // pocet kroku
-		double moleculeHeight = 0.1;
+		double moleculeHeight = (1d / 10d);
+		int step = 1;
 
 		final boolean overlap = true;
-
+		boolean whiteNoise = false;
 		boolean filter = false;
 		boolean average = false;
+		int filterFrequency = 2;
+
+		if (filter == true) {
+			step = filterFrequency;
+		}
+		double numberOfSteps = iterations * pixels; // pocet kroku
 
 		Pid pid1 = new Pid();
 
@@ -27,6 +33,8 @@ public class Main {
 		// double level = pid1.convertCurrentToZ(levelCurrent, kc);
 		double level = 1;
 		System.out.println("level je " + level);
+		double levelPrevious = level;
+		double levelHeightened = (level + (1d / 3d));
 
 		double input = 8;
 		double inputCurrent = pid1.convertZToCurrent(input, kc);
@@ -52,7 +60,6 @@ public class Main {
 
 		// cyklus
 		Double pidOutput = 0.0;
-		String oscillation = "-";
 
 		// smycka meri kazdych 25 mikrosekund
 		// v jednom pixelu hrot stravi pul milisekundy
@@ -66,23 +73,23 @@ public class Main {
 
 		boolean moleculePresent = false;
 		int counter = 0;
+
 		// hlavni smycka
 		// pracujeme v nanometrech
-		for (int i = 1; i <= (numberOfSteps); i++) {
+		for (int i = 1, j = 1; i <= (numberOfSteps); i += step, j++) {
 
 			counter += 1;
 
 			// schod
-			if (i == Math.round((numberOfSteps / 100) * 40)) {
-				level += (1d / 3d);
-			}
-
-			if (i == Math.round((numberOfSteps / 100) * 60)) {
-				level -= (1d / 3d);
+			if ((i >= Math.round((numberOfSteps / 100) * 40))
+					&& (i < Math.round(numberOfSteps / 100) * 60)) {
+				level = levelHeightened;
+			} else {
+				level = levelPrevious;
 			}
 
 			// korugace povrchu
-			double SetpointDistance = (((1d / 30d) * Math.sin((240 / 3.14) * i)) + level);
+			double SetpointDistance = (((1d / 30d) * Math.sin((10 / 3.14) * j) + level));
 			// vyvyseni zpusobene molekulou
 			double SetpointDistanceWithMolecule = level + moleculeHeight;
 			// ulozeni puvodni urovne povrchu
@@ -114,8 +121,6 @@ public class Main {
 
 			double Setpoint = pid1.convertZToCurrent(SetpointDistance, kc);
 
-			// System.out.println("Rozdil je " + Setpoint + inputCurrent);
-
 			// pred predanim solve se prevedou vzdalenosti na proud
 			pidOutput = (pid1.solve(kp, ki, kd, inputCurrent, Setpoint, kc));
 
@@ -138,15 +143,10 @@ public class Main {
 			// evaluateResult = output1.evaluateOutput(pidOutput, i, Setpoint);
 
 			if (filter == false && average == false) {
-				if ((counter) % (20) == 0) {
-					// konzolovej output
-					System.out.print(i + " "); // vytiskne pro gnuplot poradnik
-					System.out.println((position) + " " + SetpointDistance);
 
-					// print to file
-					out.println(i + " " + position + " " + SetpointDistance);
+				System.out.println(i + " " + position + " " + SetpointDistance);
+				out.println(j + " " + position + " " + SetpointDistance);
 
-				}
 			} else if (filter == false && average == true) {
 				averageOutputCounter += position;
 				if ((counter) % (20) == 0) {
@@ -161,24 +161,39 @@ public class Main {
 					averageOutputCounter = 0;
 				}
 			} else if (filter == true && average == false) {
-				return;
+				averageOutputCounter += position;
+				if ((counter) % (filterFrequency) == 0) {
+					position = averageOutputCounter / filterFrequency;
+					// konzolovej output
+					System.out.print(i + " "); // vytiskne pro gnuplot poradnik
+					System.out.println((position) + " " + SetpointDistance);
+
+					// print to file
+					out.println(i + " " + position + " " + SetpointDistance);
+
+					averageOutputCounter = 0;
+				}
 			}
 
-			// ulozi si predchozi output pro porovnani
-			// previousPidOutput = pidOutput;
+			// white noise of current, up to 10 %
+			if (whiteNoise == true) {
+				Random randomGenerator = new Random();
+				int whiteNoiseFrequency = randomGenerator.nextInt(3);
+				double whiteNoisevalue = randomGenerator.nextInt(10);
+
+				if (whiteNoiseFrequency == 1) {
+					pidOutput = pidOutput * (1 + (whiteNoisevalue / 100));
+				} else if (whiteNoiseFrequency == 2) {
+					pidOutput = pidOutput * (1 - (whiteNoisevalue / 100));
+				}
+			}
 
 			// if (randomInt != 0) {
 			// pidOutput -= fuzzy;
 			// }
 
 			inputCurrent = pidOutput;
-
-			// oscillation = output1.evaluateOscillation(previousPidOutput,
-			// pidOutput);
 		}
 		out.close();
-
-		// Output output = new Output();
-		// output.evaluateResults(nameOfFile);
 	}
 }
