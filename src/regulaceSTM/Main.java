@@ -6,7 +6,7 @@ import java.util.Random;
 
 public class Main {
 	public static void main(String[] args) throws IOException {
-		final double kp = 0.21; // konstanty proporcni, integracni, derivacni
+		final double kp = 0; // konstanty proporcni, integracni, derivacni
 								// 0.7 a 4 je velke kmitani
 		final double ki = 4;
 		final double kd = 0;
@@ -16,11 +16,11 @@ public class Main {
 		double moleculeHeight = (1d / 10d);
 		int step = 1;
 
-		final boolean overlap = true;
+		boolean overlap = true;
 		boolean whiteNoise = false;
 		boolean filter = false;
 		boolean average = false;
-		int filterFrequency = 2;
+		int filterFrequency = 1;
 
 		if (filter == true) {
 			step = filterFrequency;
@@ -56,7 +56,9 @@ public class Main {
 
 		// inicializace writeru, ktery pise do souboru
 		// PrintWriter out = new PrintWriter("results2/" + nameOfFile);
-		PrintWriter out = new PrintWriter("results2/test.txt");
+		PrintWriter out = new PrintWriter("results3/hrot.txt");
+		PrintWriter outSurface = new PrintWriter("results3/povrch.txt");
+		PrintWriter outCurrent = new PrintWriter("results3/current.txt");
 
 		// cyklus
 		Double pidOutput = 0.0;
@@ -76,7 +78,7 @@ public class Main {
 
 		// hlavni smycka
 		// pracujeme v nanometrech
-		for (int i = 1, j = 1; i <= (numberOfSteps); i += step, j++) {
+		for (int i = 1, j = 1; j <= (numberOfSteps); i += step, j++) {
 
 			counter += 1;
 
@@ -89,7 +91,8 @@ public class Main {
 			}
 
 			// korugace povrchu
-			double SetpointDistance = (((1d / 30d) * Math.sin((10 / 3.14) * j) + level));
+			Surface corrugation = new Surface();
+			double SetpointDistance = corrugation.corrugation(i, level, step);
 			// vyvyseni zpusobene molekulou
 			double SetpointDistanceWithMolecule = level + moleculeHeight;
 			// ulozeni puvodni urovne povrchu
@@ -98,9 +101,10 @@ public class Main {
 			// usek nahodneho vyskytu castice
 			if (i >= Math.round((numberOfSteps / 100) * 35)
 					&& i < Math.round((numberOfSteps / 100) * 40)) {
+
 				if (moleculePresent == false) {
 					Random randomGenerator = new Random();
-					int randomInt = randomGenerator.nextInt(8);
+					int randomInt = randomGenerator.nextInt(iterations * 4);
 
 					if (randomInt == 0) {
 						moleculePresent = true;
@@ -110,13 +114,14 @@ public class Main {
 					SetpointDistance = SetpointDistanceWithMolecule;
 
 					Random randomGenerator = new Random();
-					int randomInt = randomGenerator.nextInt(8);
+					int randomInt = randomGenerator.nextInt(iterations * 4);
 
 					if (randomInt == 0) {
 						moleculePresent = false;
 						SetpointDistance = SetpointDistanceWithoutMolecule;
 					}
 				}
+
 			}
 
 			double Setpoint = pid1.convertZToCurrent(SetpointDistance, kc);
@@ -124,12 +129,27 @@ public class Main {
 			// pred predanim solve se prevedou vzdalenosti na proud
 			pidOutput = (pid1.solve(kp, ki, kd, inputCurrent, Setpoint, kc));
 
+			// white noise of current, up to 10 %
+			if (whiteNoise == true) {
+				Random randomGenerator = new Random();
+				int whiteNoiseFrequency = randomGenerator.nextInt(3);
+				double whiteNoisevalue = randomGenerator.nextInt(10);
+
+				if (whiteNoiseFrequency == 1) {
+					pidOutput = pidOutput * (1 + (whiteNoisevalue / 100));
+				} else if (whiteNoiseFrequency == 2) {
+					pidOutput = pidOutput * (1 - (whiteNoisevalue / 100));
+				}
+			}
+
 			// Random randomGenerator = new Random();
 			// int randomInt = (randomGenerator.nextInt(2) + 1);
 			// double fuzzy = 1 / (0.5 * randomInt);
 			// pidOutput += fuzzy;
 
-			// System.out.println("Hodnoty jsou ****   " + pidOutput);
+			// vytiskne proud
+			outCurrent.println(j + " " + pidOutput);
+
 			Double distance = pid1.convertCurrentToZ(pidOutput, kc);
 
 			Double position = SetpointDistance + distance;
@@ -139,25 +159,24 @@ public class Main {
 			}
 
 			// vola evaluaci dat - oscilace a jine
-			Output output1 = new Output();
 			// evaluateResult = output1.evaluateOutput(pidOutput, i, Setpoint);
 
 			if (filter == false && average == false) {
 
-				System.out.println(i + " " + position + " " + SetpointDistance);
-				out.println(j + " " + position + " " + SetpointDistance);
-
+				System.out.println(j + " " + position + " " + SetpointDistance);
+				out.println(j + " " + position);
+				outSurface.println(j + " " + SetpointDistance);
 			} else if (filter == false && average == true) {
 				averageOutputCounter += position;
+				outSurface.println(j + " " + SetpointDistance);
 				if ((counter) % (20) == 0) {
 					position = averageOutputCounter / 20;
 					// konzolovej output
-					System.out.print(i + " "); // vytiskne pro gnuplot poradnik
+					System.out.print(i + " "); // vytiskne poradnik
 					System.out.println((position) + " " + SetpointDistance);
 
 					// print to file
-					out.println(i + " " + position + " " + SetpointDistance);
-
+					out.println(i + " " + position);
 					averageOutputCounter = 0;
 				}
 			} else if (filter == true && average == false) {
@@ -175,19 +194,6 @@ public class Main {
 				}
 			}
 
-			// white noise of current, up to 10 %
-			if (whiteNoise == true) {
-				Random randomGenerator = new Random();
-				int whiteNoiseFrequency = randomGenerator.nextInt(3);
-				double whiteNoisevalue = randomGenerator.nextInt(10);
-
-				if (whiteNoiseFrequency == 1) {
-					pidOutput = pidOutput * (1 + (whiteNoisevalue / 100));
-				} else if (whiteNoiseFrequency == 2) {
-					pidOutput = pidOutput * (1 - (whiteNoisevalue / 100));
-				}
-			}
-
 			// if (randomInt != 0) {
 			// pidOutput -= fuzzy;
 			// }
@@ -195,5 +201,7 @@ public class Main {
 			inputCurrent = pidOutput;
 		}
 		out.close();
+		outSurface.close();
+		outCurrent.close();
 	}
 }
