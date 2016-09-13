@@ -8,9 +8,9 @@ public class Main {
 	public static void main(String[] args) throws IOException {
 		double inputCurrent = 1;
 
-		final double kp = 0.0; // konstanty proporcni, integracni, derivacni
+		final double kp = 0.2; // konstanty proporcni, integracni, derivacni
 								// 0.7 a 4 je velke kmitani
-		final double ki = 0.2;
+		final double ki = 0.109;
 		final double kd = 0;
 		final double kc = 1;
 		int iterations = 20;
@@ -178,7 +178,7 @@ public class Main {
 
 			// hustota filtru
 			int numberEntry = 12;
-
+			filter1.setFilterDensity(numberEntry);
 			// filtr na proud
 			if (filter == true) {
 				pidOutputFiltered = filter1.filter(numberEntry, pidOutput);
@@ -187,7 +187,7 @@ public class Main {
 
 			// filtr na position
 			if (filterP == true) {
-				positionFiltered = filter1.filter(numberEntry, position);
+				positionFiltered = filter1.filterP(numberEntry, position);
 				outFilterP.println(i + " " + positionFiltered);
 			}
 

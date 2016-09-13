@@ -1,23 +1,30 @@
 package regulaceSTM;
 
 public class Filter {
-
+	int entryNo = 12;
 	double pidOutputCounter = 0;
 	double pidOutputCounterP = 0;
 	// int counter = 0;
 	double result = 0;
 	double resultP = 0;
-	double[] catalog = new double[12 + 1];
-	double[] catalogP = new double[12 + 1];
+
+	// predani velikosti poli
+	public void setFilterDensity(int entryNumber) {
+		entryNo = entryNumber;
+	}
+
+	// deklarace poli
+	double[] catalog = new double[entryNo + 1];
+	double[] catalogP = new double[entryNo + 1];
 
 	public void initializeFilter() {
-		for (int i = 0; i == 4; i++) {
+		for (int i = 0; i == 12; i++) {
 			catalog[i] = 0.0;
 		}
 	}
 
 	public void initializeFilterP() {
-		for (int i = 0; i == 4; i++) {
+		for (int i = 0; i == 12; i++) {
 			catalogP[i] = 0.0;
 		}
 	}
