@@ -20,16 +20,21 @@ public class Main {
 
 		boolean overlap = true;
 		boolean whiteNoise = true;
-		boolean filter = false;
+		boolean filter = true;
+		boolean filterP = true;
 		boolean average = true;
 		boolean averageCurrent = true;
 		int filterFrequency = 1;
 
-		if (filter == true) {
-			step = filterFrequency;
-		}
+		// if (filter == true) {
+		// step = filterFrequency;
+		// }
 
 		Pid pid1 = new Pid();
+		Filter filter1 = new Filter();
+		filter1.initializeFilter();
+		filter1.initializeFilterP();
+
 		double numberOfSteps = iterations * pixels; // pocet kroku
 
 		// nove promenne
@@ -51,6 +56,8 @@ public class Main {
 		// *****
 		double averageOutputCounter = 0;
 		double averageCurrentCounter = 0;
+		double pidOutputFiltered = 0;
+		double positionFiltered = 0;
 
 		// vytvorit jmeno souboru do ktereho ulozime data, aby byly zpetne
 		// dohledatelne pocatecni podminky
@@ -67,6 +74,7 @@ public class Main {
 		PrintWriter outSurface = new PrintWriter("results3/povrch.txt");
 		PrintWriter outCurrent = new PrintWriter("results3/current.txt");
 		PrintWriter outFilter = new PrintWriter("results3/filter.txt");
+		PrintWriter outFilterP = new PrintWriter("results3/filterP.txt");
 
 		// cyklus
 		Double pidOutput = 0.0;
@@ -141,10 +149,8 @@ public class Main {
 			// vysledny proud se ziska poslanim aktualniho proudu a pozadovane
 			// hodnoty do pid regulatoru
 
-			System.out.println("icF " + inputCurrent);
 			pidOutput = pid1.solve(kp, ki, kd, inputCurrent, setpointCurrent,
 					kc);
-			System.out.println("PO " + pidOutput);
 
 			// white noise of current, up to 10 %
 			if (whiteNoise == true) {
@@ -164,20 +170,35 @@ public class Main {
 
 			// prevod vzdalenosti na pozici v ose z
 			position = level + distance;
+
+			// prekryti v grafu
 			if (overlap == true) {
 				position -= level;
 			}
 
-			// heightOfTip = position;
+			// hustota filtru
+			int numberEntry = 12;
+
+			// filtr na proud
+			if (filter == true) {
+				pidOutputFiltered = filter1.filter(numberEntry, pidOutput);
+				outFilter.println(i + " " + pidOutputFiltered);
+			}
+
+			// filtr na position
+			if (filterP == true) {
+				positionFiltered = filter1.filter(numberEntry, position);
+				outFilterP.println(i + " " + positionFiltered);
+			}
 
 			// ruzne druhy vystupu
-			if (filter == false && average == false) {
+			if (average == false) {
 
 				System.out.println(j + " " + position + " " + SetpointDistance);
 				out.println(j + " " + (position));
 				outSurface.println(j + " " + SetpointDistance);
 
-			} else if (filter == false && average == true) {
+			} else if (average == true) {
 				averageOutputCounter += position;
 				outSurface.println(j + " " + SetpointDistance);
 				if ((counter) % (20) == 0) {
@@ -189,23 +210,6 @@ public class Main {
 					// print to file
 					out.println(i + " " + position);
 					averageOutputCounter = 0;
-				}
-			} else if (filter == true && average == false) {
-				averageOutputCounter += position;
-				if ((counter) % (filterFrequency) == 0) {
-					position = averageOutputCounter / filterFrequency;
-					// konzolovej output
-					System.out.print(i + " "); // vytiskne pro gnuplot poradnik
-					System.out.println((position) + " " + SetpointDistance);
-
-					// print to file
-					out.println(i + " " + position + " " + SetpointDistance);
-
-					averageOutputCounter = 0;
-
-					Filter filter1 = new Filter();
-					filter1.filter(5, pidOutput);
-
 				}
 			}
 
@@ -227,14 +231,9 @@ public class Main {
 			// inputCurrent = pidOutput;
 		}
 
-		double x = 0.0001;
-		System.out.println(pid1.convertZToCurrent(x, kc));
-
-		System.out.println("test final final "
-				+ (pid1.solve(kp, ki, kd, (3), 0.6, kc)));
-
 		out.close();
 		outSurface.close();
 		outCurrent.close();
+		outFilter.close();
 	}
 }

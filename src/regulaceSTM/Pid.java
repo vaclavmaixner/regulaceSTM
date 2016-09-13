@@ -11,12 +11,11 @@ public class Pid {
 
 	public double solve(double kp, double ki, double kd, double Input,
 			double Setpoint, double kc) {
-		// inicializace
-		deltaTime = 0.1;
+		// // inicializace
+		deltaTime = 1;
 
 		// Spocitat error
 		double error = (Setpoint - Input);
-		// System.out.println("Error je " + error + " s konstantou " + kp);
 
 		// Pricist error do error sum
 		errorSum += (error * deltaTime);
@@ -30,13 +29,6 @@ public class Pid {
 		// pripravit na dalsi kolo
 		previousError = error;
 
-		// time meri ubehnuty cas
-		time += deltaTime;
-		// System.out.println("The time is " + time);
-
-		// ****** zkonvertovat output na proud
-
-		// Output = convertCurrentToZ(Output, kc);
 		return Output;
 	}
 
