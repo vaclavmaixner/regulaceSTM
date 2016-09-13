@@ -6,9 +6,11 @@ import java.util.Random;
 
 public class Main {
 	public static void main(String[] args) throws IOException {
-		final double kp = 0.2; // konstanty proporcni, integracni, derivacni
+		double inputCurrent = 1;
+
+		final double kp = 0.0; // konstanty proporcni, integracni, derivacni
 								// 0.7 a 4 je velke kmitani
-		final double ki = 0.7;
+		final double ki = 0.2;
 		final double kd = 0;
 		final double kc = 1;
 		int iterations = 20;
@@ -27,22 +29,21 @@ public class Main {
 			step = filterFrequency;
 		}
 
+		Pid pid1 = new Pid();
 		double numberOfSteps = iterations * pixels; // pocet kroku
 
 		// nove promenne
-		double heightOfTip = 17;
-		double setpointCurrentF = 0.5;
+		// double heightOfTip = 4;
+		final double setpointCurrent = 1;
 
-		Pid pid1 = new Pid();
-
-		double levelCurrent = 7; // v jednotkach proudu
+		// double levelCurrent = 7; // v jednotkach proudu
 		// double level = pid1.convertCurrentToZ(levelCurrent, kc);
 		double level = 1;
 		double levelPrevious = level;
 		double levelHeightened = (level + (1d / 3d));
 
-		double input = 8;
-		double inputCurrent = pid1.convertZToCurrent(input, kc);
+		// double input = 8;
+		// double inputCurrent = pid1.convertZToCurrent(input, kc);
 
 		// double inputCurrent = 2; // pocet kroku
 		// double input = pid1.convertCurrentToZ(inputCurrent, kc);
@@ -53,18 +54,19 @@ public class Main {
 
 		// vytvorit jmeno souboru do ktereho ulozime data, aby byly zpetne
 		// dohledatelne pocatecni podminky
-		final String nameOfFile = Double.toString(kp) + "_"
-				+ Double.toString(ki) + "_" + Double.toString(kd) + "_"
-				+ Double.toString(levelCurrent) + ".txt";
+		// final String nameOfFile = Double.toString(kp) + "_"
+		// + Double.toString(ki) + "_" + Double.toString(kd) + "_"
+		// + Double.toString(levelCurrent) + ".txt";
 
 		// vytiskne jmeno souboru pro uzivatele
-		System.out.println(nameOfFile);
+		// System.out.println(nameOfFile);
 
 		// inicializace writeru, ktery pise do souboru
 		// PrintWriter out = new PrintWriter("results2/" + nameOfFile);
 		PrintWriter out = new PrintWriter("results3/hrot.txt");
 		PrintWriter outSurface = new PrintWriter("results3/povrch.txt");
 		PrintWriter outCurrent = new PrintWriter("results3/current.txt");
+		PrintWriter outFilter = new PrintWriter("results3/filter.txt");
 
 		// cyklus
 		Double pidOutput = 0.0;
@@ -81,12 +83,14 @@ public class Main {
 
 		boolean moleculePresent = false;
 		int counter = 0;
-		double SetpointCurrent = 0.3;
+
+		// nove promenne
+		// double distanceF = heightOfTip - SetpointDistance;
+		double position = 10;
 
 		// hlavni smycka
 		// pracujeme v nanometrech
 		for (int i = 1, j = 1; j <= (numberOfSteps); i += step, j++) {
-
 			counter += 1;
 
 			// schod
@@ -104,10 +108,6 @@ public class Main {
 			double SetpointDistanceWithMolecule = level + moleculeHeight;
 			// ulozeni puvodni urovne povrchu
 			double SetpointDistanceWithoutMolecule = SetpointDistance;
-
-			// nove promenne
-			double distanceF = heightOfTip - SetpointDistance;
-			double inputCurrentF = pid1.convertZToCurrent(distanceF, kc);
 
 			// usek nahodneho vyskytu castice
 			if (i >= Math.round((numberOfSteps / 100) * 35)
@@ -135,17 +135,16 @@ public class Main {
 
 			}
 
-			// double SetpointCurrent = pid1.convertZToCurrent(SetpointDistance,
-			// kc);
+			inputCurrent = pid1.convertZToCurrent(
+					(position - SetpointDistance), kc);
 
-			// pred predanim solve se prevedou vzdalenosti na proud
-			pidOutput = (pid1.solve(kp, ki, kd, inputCurrentF,
-					setpointCurrentF, kc));
+			// vysledny proud se ziska poslanim aktualniho proudu a pozadovane
+			// hodnoty do pid regulatoru
 
-			// double SetpointCurrentFinal = 4;
-			// double inputCurrentFinal = heightOfTip + SetpointDistance;
-			// double currentFinal = pid1.solve(kp, ki, kd, inputCurrentFinal,
-			// SetpointCurrentFinal, kc);
+			System.out.println("icF " + inputCurrent);
+			pidOutput = pid1.solve(kp, ki, kd, inputCurrent, setpointCurrent,
+					kc);
+			System.out.println("PO " + pidOutput);
 
 			// white noise of current, up to 10 %
 			if (whiteNoise == true) {
@@ -160,10 +159,16 @@ public class Main {
 				}
 			}
 
+			// prevod proudu na vzdalenost hrotu od vzorku
 			Double distance = pid1.convertCurrentToZ(pidOutput, kc);
 
-			Double position = SetpointDistance + distance;
-			heightOfTip = position;
+			// prevod vzdalenosti na pozici v ose z
+			position = level + distance;
+			if (overlap == true) {
+				position -= level;
+			}
+
+			// heightOfTip = position;
 
 			// ruzne druhy vystupu
 			if (filter == false && average == false) {
@@ -197,9 +202,14 @@ public class Main {
 					out.println(i + " " + position + " " + SetpointDistance);
 
 					averageOutputCounter = 0;
+
+					Filter filter1 = new Filter();
+					filter1.filter(5, pidOutput);
+
 				}
 			}
 
+			// funkce prumerovani proudu
 			if (averageCurrent == true) {
 				averageCurrentCounter += pidOutput;
 
@@ -211,16 +221,18 @@ public class Main {
 					averageCurrentCounter = 0;
 				}
 			} else if (averageCurrent == false) {
-				// vytiskne proud do souboru
 				outCurrent.println(j + " " + (pidOutput));
 			}
 
-			// if (randomInt != 0) {
-			// pidOutput -= fuzzy;
-			// }
-
-			inputCurrent = pidOutput;
+			// inputCurrent = pidOutput;
 		}
+
+		double x = 0.0001;
+		System.out.println(pid1.convertZToCurrent(x, kc));
+
+		System.out.println("test final final "
+				+ (pid1.solve(kp, ki, kd, (3), 0.6, kc)));
+
 		out.close();
 		outSurface.close();
 		outCurrent.close();
