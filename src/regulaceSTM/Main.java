@@ -8,17 +8,19 @@ public class Main {
 	public static void main(String[] args) throws IOException {
 		double inputCurrent = 1;
 
-		final double kp = 1; // konstanty proporcni, integracni, derivacni
-		final double ki = 0.1;
+		// konstanty
+		final double kp = 0.005;
+		final double ki = 0.007;
 		final double kd = 0;
-		final double kc = 8;
+		final double kc = 6;
+
 		int iterations = 20;
 		double pixels = 512;
 		double moleculeHeight = (1d / 10d);
 		int step = 1;
 
 		boolean overlap = false;
-		boolean whiteNoise = true;
+		boolean whiteNoise = false;
 		boolean filter = true;
 		boolean filterP = true;
 		boolean average = false;
@@ -33,11 +35,13 @@ public class Main {
 		double numberOfSteps = iterations * pixels;
 
 		// proud, ktery chceme udrzovat
-		final double setpointCurrent = 0.08;
+		final double setpointCurrent = 0.99;
 
 		double level = 1;
 		double levelPrevious = level;
 		double levelHeightened = (level + (1d / 3d));
+
+		double levelConstant = level;
 
 		double averageOutputCounter = 0;
 		double averageCurrentCounter = 0;
@@ -53,6 +57,7 @@ public class Main {
 
 		// cyklus
 		Double pidOutput = 0.0;
+		Double zDistance = 2.0;
 
 		// smycka meri kazdych 25 mikrosekund
 		// v jednom pixelu hrot stravi pul milisekundy
@@ -61,7 +66,7 @@ public class Main {
 		int counter = 0;
 
 		// pozice v ose z na ktere zacina hrot
-		double position = 10;
+		double position = 1.0;
 
 		// hlavni smycka
 		for (int i = 1, j = 1; j <= (numberOfSteps); i += step, j++) {
@@ -109,16 +114,13 @@ public class Main {
 
 			}
 
-			inputCurrent = pid1.convertZToCurrent(
-					(position - SetpointDistance), kc);
+			zDistance = position - SetpointDistance;
+
+			inputCurrent = pid1.convertZToCurrent((zDistance), kc);
+			// System.out.println("InputCurrent je " + inputCurrent);
 
 			// vysledny proud se ziska poslanim aktualniho proudu a pozadovane
 			// hodnoty do pid regulatoru
-
-			pidOutput = pid1.solve(kp, ki, kd, inputCurrent, setpointCurrent,
-					kc);
-
-			System.out.println(pidOutput);
 
 			// zasumeni proudu, max do hodnoty 10 %
 			if (whiteNoise == true) {
@@ -127,29 +129,37 @@ public class Main {
 				double whiteNoisevalue = randomGenerator.nextInt(10);
 
 				if (whiteNoiseFrequency == 1) {
-					pidOutput = pidOutput * (1 + (whiteNoisevalue / 100));
+					inputCurrent = inputCurrent * (1 + (whiteNoisevalue / 100));
 				} else if (whiteNoiseFrequency == 2) {
-					pidOutput = pidOutput * (1 - (whiteNoisevalue / 100));
+					inputCurrent = inputCurrent * (1 - (whiteNoisevalue / 100));
 				}
 			}
 
+			pidOutput = pid1.solve(kp, ki, kd, inputCurrent, setpointCurrent,
+					kc);
+
+			// System.out.println("PidOutput je " + pidOutput);
+
 			// prevod proudu na vzdalenost hrotu od vzorku
-			Double distance = pid1.convertCurrentToZ(pidOutput, kc);
+			// Double distance = pid1.convertCurrentToZ(pidOutput, kc);
+
+			zDistance -= pidOutput;
 
 			// prevod vzdalenosti na pozici v ose z
-			position = SetpointDistance + distance;
+			position = zDistance;
 
 			// prekryti v grafu
-			if (overlap == true) {
-				position -= level;
-			}
+			// if (overlap == true) {
+			// position -= level;
+			// }
 
 			// hustota filtru
 			int numberEntry = 12;
 			filter1.setFilterDensity(numberEntry);
+
 			// filtr na proud
 			if (filter == true) {
-				pidOutputFiltered = filter1.filter(numberEntry, pidOutput);
+				pidOutputFiltered = filter1.filter(numberEntry, inputCurrent);
 				outFilter.println(i + " " + pidOutputFiltered);
 			}
 
@@ -170,20 +180,21 @@ public class Main {
 				averageOutputCounter += position;
 				outSurface.println(j + " " + SetpointDistance);
 				if ((counter) % (20) == 0) {
-					position = averageOutputCounter / 20;
+					double positionAverage = averageOutputCounter / 20;
 					// konzolovej output
 					System.out.print(i + " "); // vytiskne poradnik
-					System.out.println((position) + " " + SetpointDistance);
+					System.out.println((positionAverage) + " "
+							+ SetpointDistance);
 
 					// print to file
-					out.println(i + " " + position);
+					out.println(i + " " + positionAverage);
 					averageOutputCounter = 0;
 				}
 			}
 
 			// funkce prumerovani proudu
 			if (averageCurrent == true) {
-				averageCurrentCounter += pidOutput;
+				averageCurrentCounter += inputCurrent;
 
 				if ((counter) % (20) == 0) {
 					double pidOutputCurrent = averageCurrentCounter / 20;
@@ -193,10 +204,8 @@ public class Main {
 					averageCurrentCounter = 0;
 				}
 			} else if (averageCurrent == false) {
-				outCurrent.println(j + " " + (pidOutput));
+				outCurrent.println(j + " " + (inputCurrent));
 			}
-
-			// inputCurrent = pidOutput;
 		}
 
 		out.close();
