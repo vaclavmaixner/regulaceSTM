@@ -38,6 +38,9 @@ public class Pid {
 	}
 
 	public double convertCurrentToZ(double current, double kc) {
+		// if (current < 0) {
+		// current = current * (-1);
+		// }
 		double z = Math.log(1 / current) / (kc);
 		return z;
 	}

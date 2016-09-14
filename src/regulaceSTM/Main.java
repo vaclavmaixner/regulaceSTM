@@ -8,68 +8,43 @@ public class Main {
 	public static void main(String[] args) throws IOException {
 		double inputCurrent = 1;
 
-		final double kp = 0.2; // konstanty proporcni, integracni, derivacni
-								// 0.7 a 4 je velke kmitani
-		final double ki = 0.109;
+		final double kp = 1; // konstanty proporcni, integracni, derivacni
+		final double ki = 0.1;
 		final double kd = 0;
-		final double kc = 1;
+		final double kc = 8;
 		int iterations = 20;
 		double pixels = 512;
 		double moleculeHeight = (1d / 10d);
 		int step = 1;
 
-		boolean overlap = true;
+		boolean overlap = false;
 		boolean whiteNoise = true;
 		boolean filter = true;
 		boolean filterP = true;
-		boolean average = true;
-		boolean averageCurrent = true;
-		int filterFrequency = 1;
-
-		// if (filter == true) {
-		// step = filterFrequency;
-		// }
+		boolean average = false;
+		boolean averageCurrent = false;
 
 		Pid pid1 = new Pid();
 		Filter filter1 = new Filter();
 		filter1.initializeFilter();
 		filter1.initializeFilterP();
 
-		double numberOfSteps = iterations * pixels; // pocet kroku
+		// pocet kroku smycky
+		double numberOfSteps = iterations * pixels;
 
-		// nove promenne
-		// double heightOfTip = 4;
-		final double setpointCurrent = 1;
+		// proud, ktery chceme udrzovat
+		final double setpointCurrent = 0.08;
 
-		// double levelCurrent = 7; // v jednotkach proudu
-		// double level = pid1.convertCurrentToZ(levelCurrent, kc);
 		double level = 1;
 		double levelPrevious = level;
 		double levelHeightened = (level + (1d / 3d));
 
-		// double input = 8;
-		// double inputCurrent = pid1.convertZToCurrent(input, kc);
-
-		// double inputCurrent = 2; // pocet kroku
-		// double input = pid1.convertCurrentToZ(inputCurrent, kc);
-
-		// *****
 		double averageOutputCounter = 0;
 		double averageCurrentCounter = 0;
 		double pidOutputFiltered = 0;
 		double positionFiltered = 0;
 
-		// vytvorit jmeno souboru do ktereho ulozime data, aby byly zpetne
-		// dohledatelne pocatecni podminky
-		// final String nameOfFile = Double.toString(kp) + "_"
-		// + Double.toString(ki) + "_" + Double.toString(kd) + "_"
-		// + Double.toString(levelCurrent) + ".txt";
-
-		// vytiskne jmeno souboru pro uzivatele
-		// System.out.println(nameOfFile);
-
 		// inicializace writeru, ktery pise do souboru
-		// PrintWriter out = new PrintWriter("results2/" + nameOfFile);
 		PrintWriter out = new PrintWriter("results3/hrot.txt");
 		PrintWriter outSurface = new PrintWriter("results3/povrch.txt");
 		PrintWriter outCurrent = new PrintWriter("results3/current.txt");
@@ -81,23 +56,14 @@ public class Main {
 
 		// smycka meri kazdych 25 mikrosekund
 		// v jednom pixelu hrot stravi pul milisekundy
-		// rozhodnout si jestli brat posledni hodnotu na pixelu, nebo to
-		// stredovat
-		// spravit to, ze velika kp slozka haze NaN
-		// spravit to, ze pri nizkych konstantach se to posunuje do zaporu -
-		// nema se to posunovat vubec!!
-		// zavest chybovy proud - kdyz klesa do diry, tak se proud snizi a
-		// naopak
 
 		boolean moleculePresent = false;
 		int counter = 0;
 
-		// nove promenne
-		// double distanceF = heightOfTip - SetpointDistance;
+		// pozice v ose z na ktere zacina hrot
 		double position = 10;
 
 		// hlavni smycka
-		// pracujeme v nanometrech
 		for (int i = 1, j = 1; j <= (numberOfSteps); i += step, j++) {
 			counter += 1;
 
@@ -152,7 +118,9 @@ public class Main {
 			pidOutput = pid1.solve(kp, ki, kd, inputCurrent, setpointCurrent,
 					kc);
 
-			// white noise of current, up to 10 %
+			System.out.println(pidOutput);
+
+			// zasumeni proudu, max do hodnoty 10 %
 			if (whiteNoise == true) {
 				Random randomGenerator = new Random();
 				int whiteNoiseFrequency = randomGenerator.nextInt(3);
@@ -169,7 +137,7 @@ public class Main {
 			Double distance = pid1.convertCurrentToZ(pidOutput, kc);
 
 			// prevod vzdalenosti na pozici v ose z
-			position = level + distance;
+			position = SetpointDistance + distance;
 
 			// prekryti v grafu
 			if (overlap == true) {
@@ -235,5 +203,6 @@ public class Main {
 		outSurface.close();
 		outCurrent.close();
 		outFilter.close();
+		outFilterP.close();
 	}
 }
