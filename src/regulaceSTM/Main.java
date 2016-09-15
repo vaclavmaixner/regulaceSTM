@@ -6,8 +6,8 @@ import java.io.PrintWriter;
 public class Main {
 	public static void main(String[] args) throws IOException {
 		// konstanty
-		final double kp = 2;
-		final double ki = 5;
+		final double kp = 0.1;
+		final double ki = 4;
 		final double kd = 0;
 		final double kc = 0.1;
 
@@ -39,7 +39,7 @@ public class Main {
 
 		final double setpointCurrent = 0.95;
 		// double zDistance = 3.0;
-		double inputCurrent = pid1.convertZToCurrent(10, kc);
+		double inputCurrent = 0.0;
 		// double position = 10;
 		// double inputCurrent = 2;
 
@@ -66,7 +66,7 @@ public class Main {
 			// hodnoty do pid regulatoru
 
 			double pidOutput = pid1.solve(kp, ki, kd, inputCurrent,
-					setpointCurrent, kc);
+					setpointCurrent);
 
 			// prevod proudu na vzdalenost hrotu od vzorku
 			zDistance -= pidOutput;
@@ -86,6 +86,8 @@ public class Main {
 			outSurface.println(i + " " + setpointDistance);
 
 			outCurrent.println(i + " " + (inputCurrent));
+
+			inputCurrent = pidOutput;
 		}
 
 		out.close();
