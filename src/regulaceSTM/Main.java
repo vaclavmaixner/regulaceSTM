@@ -7,10 +7,10 @@ import java.util.Random;
 public class Main {
 	public static void main(String[] args) throws IOException {
 		// konstanty pid regulatoru
-		final double kp = 0.01;
-		final double ki = 0.01;
+		final double kp = 0.8;
+		final double ki = 0.8;
 		final double kd = 0;
-		final double kc = 10;
+		final double kc = 1;
 		// parametry smycky
 		int iterations = 20;
 		double pixels = 512;
@@ -37,8 +37,8 @@ public class Main {
 		PrintWriter outFilter = new PrintWriter("results3/filter.txt");
 		PrintWriter outFilterP = new PrintWriter("results3/filterP.txt");
 		// pocatecni parametry hrotu a vazby
-		double position = 2.5;
-		final double setpointCurrent = 0.1;
+		double position = 2.1;
+		final double setpointCurrent = 0.5;
 		double inputCurrent = pid1.convertZToCurrent((position - level), kc);
 		// inicializace promennych pro filtry
 		double averageOutputCounter = 0;
@@ -48,11 +48,12 @@ public class Main {
 
 		// rozhodnuti o filtrovani
 		// dodelat overlap
-		boolean whiteNoise = true;
-		boolean filter = true;
-		boolean filterP = true;
+		boolean whiteNoise = false;
+		boolean filter = false;
+		boolean filterP = false;
 		boolean average = false;
 		boolean averageCurrent = false;
+		boolean overlap = false;
 
 		// hlavni smycka
 		for (int i = 1; i <= (numberOfSteps); i++) {
@@ -121,7 +122,12 @@ public class Main {
 					setpointCurrent);
 
 			// zmena pozice v reakci na zpetnou vazbu
-			position -= pidOutput;
+			position = pidOutput * (-1);
+
+			// prekryti v grafu
+			if (overlap) {
+				position -= (pid1.convertCurrentToZ(setpointCurrent, kc));
+			}
 
 			// hustota filtru
 			int numberEntry = 4;
