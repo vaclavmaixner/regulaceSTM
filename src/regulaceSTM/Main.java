@@ -7,8 +7,8 @@ import java.util.Random;
 public class Main {
 	public static void main(String[] args) throws IOException {
 		// konstanty pid regulatoru
-		final double kp = 0.8;
-		final double ki = 0.8;
+		final double kp = 0.2;
+		final double ki = 0.0;
 		final double kd = 0;
 		final double kc = 1;
 		// parametry smycky
@@ -27,6 +27,7 @@ public class Main {
 		double level = 2.0;
 		double levelPrevious = level;
 		double levelHeightened = level + (1.0 / 3.0);
+		double setpointDistance = 0;
 		// parametry pro molekulu
 		boolean moleculePresent = false;
 		double moleculeHeight = (1.0 / 10.0);
@@ -37,8 +38,8 @@ public class Main {
 		PrintWriter outFilter = new PrintWriter("results3/filter.txt");
 		PrintWriter outFilterP = new PrintWriter("results3/filterP.txt");
 		// pocatecni parametry hrotu a vazby
-		double position = 2.1;
-		final double setpointCurrent = 0.5;
+		double position = 10.0;
+		final double setpointCurrent = 1;
 		double inputCurrent = pid1.convertZToCurrent((position - level), kc);
 		// inicializace promennych pro filtry
 		double averageOutputCounter = 0;
@@ -54,6 +55,10 @@ public class Main {
 		boolean average = false;
 		boolean averageCurrent = false;
 		boolean overlap = false;
+		boolean corrugationB = false;
+		boolean molecule = false;
+		boolean cutOffStart = true;
+		boolean showCurrent = false;
 
 		// hlavni smycka
 		for (int i = 1; i <= (numberOfSteps); i++) {
@@ -67,36 +72,42 @@ public class Main {
 			}
 
 			// korugace povrchu
-			double setpointDistance = corrugation.corrugation(i, level, step);
+			if (corrugationB) {
+				setpointDistance = corrugation.corrugation(i, level, step);
+			} else if (corrugationB == false) {
+				setpointDistance = level;
+			}
 			// vyvyseni zpusobene molekulou
 			double setpointDistanceWithMolecule = level + moleculeHeight;
 			// ulozeni puvodni urovne povrchu
 			double setpointDistanceWithoutMolecule = setpointDistance;
 
 			// usek nahodneho vyskytu castice
-			if (i >= Math.round((numberOfSteps / 100) * 35)
-					&& i < Math.round((numberOfSteps / 100) * 40)) {
+			if (molecule) {
+				if (i >= Math.round((numberOfSteps / 100) * 35)
+						&& i < Math.round((numberOfSteps / 100) * 40)) {
 
-				if (moleculePresent == false) {
-					Random randomGenerator = new Random();
-					int randomInt = randomGenerator.nextInt(iterations * 4);
+					if (moleculePresent == false) {
+						Random randomGenerator = new Random();
+						int randomInt = randomGenerator.nextInt(iterations * 4);
 
-					if (randomInt == 0) {
-						moleculePresent = true;
+						if (randomInt == 0) {
+							moleculePresent = true;
+							setpointDistance = setpointDistanceWithMolecule;
+						}
+					} else if (moleculePresent == true) {
 						setpointDistance = setpointDistanceWithMolecule;
-					}
-				} else if (moleculePresent == true) {
-					setpointDistance = setpointDistanceWithMolecule;
 
-					Random randomGenerator = new Random();
-					int randomInt = randomGenerator.nextInt(iterations * 4);
+						Random randomGenerator = new Random();
+						int randomInt = randomGenerator.nextInt(iterations * 4);
 
-					if (randomInt == 0) {
-						moleculePresent = false;
-						setpointDistance = setpointDistanceWithoutMolecule;
+						if (randomInt == 0) {
+							moleculePresent = false;
+							setpointDistance = setpointDistanceWithoutMolecule;
+						}
 					}
+
 				}
-
 			}
 
 			// spocteni rozdilu vzdalenosti
@@ -133,54 +144,58 @@ public class Main {
 			int numberEntry = 4;
 			filter1.setFilterDensity(numberEntry);
 
-			// filtr na proud
-			if (filter == true) {
-				pidOutputFiltered = filter1.filter(numberEntry, inputCurrent);
-				outFilter.println(i + " " + pidOutputFiltered);
-			}
+			if ((!cutOffStart) || (cutOffStart && i >= 100)) {
+				// filtr na proud
+				if (filter == true) {
+					pidOutputFiltered = filter1.filter(numberEntry,
+							inputCurrent);
+					outFilter.println(i + " " + pidOutputFiltered);
+				}
 
-			// filtr na position
-			if (filterP == true) {
-				positionFiltered = filter1.filterP(numberEntry, position);
-				outFilterP.println(i + " " + positionFiltered);
-			}
+				// filtr na position
+				if (filterP == true) {
+					positionFiltered = filter1.filterP(numberEntry, position);
+					outFilterP.println(i + " " + positionFiltered);
+				}
 
-			// ruzne druhy vystupu
-			if (average == false) {
+				// ruzne druhy vystupu
+				if (average == false) {
 
-				System.out.println(i + " " + position + " " + setpointDistance);
-				outPosition.println(i + " " + (position));
-				outSurface.println(i + " " + setpointDistance);
-
-			} else if (average == true) {
-				averageOutputCounter += position;
-				outSurface.println(i + " " + setpointDistance);
-				if ((counter) % (20) == 0) {
-					double positionAverage = averageOutputCounter / 20;
-					// konzolovej output
-					System.out.print(i + " "); // vytiskne poradnik
-					System.out.println((positionAverage) + " "
+					System.out.println(i + " " + position + " "
 							+ setpointDistance);
+					outPosition.println(i + " " + (position));
+					outSurface.println(i + " " + setpointDistance);
 
-					// print to file
-					outPosition.println(i + " " + positionAverage);
-					averageOutputCounter = 0;
+				} else if (average == true) {
+					averageOutputCounter += position;
+					outSurface.println(i + " " + setpointDistance);
+					if ((counter) % (20) == 0) {
+						double positionAverage = averageOutputCounter / 20;
+						// konzolovej output
+						System.out.print(i + " "); // vytiskne poradnik
+						System.out.println((positionAverage) + " "
+								+ setpointDistance);
+
+						// print to file
+						outPosition.println(i + " " + positionAverage);
+						averageOutputCounter = 0;
+					}
 				}
-			}
 
-			// funkce prumerovani proudu
-			if (averageCurrent == true) {
-				averageCurrentCounter += inputCurrent;
+				// funkce prumerovani proudu
+				if (averageCurrent == true && showCurrent == true) {
+					averageCurrentCounter += inputCurrent;
 
-				if ((counter) % (20) == 0) {
-					double pidOutputCurrent = averageCurrentCounter / 20;
+					if ((counter) % (20) == 0) {
+						double pidOutputCurrent = averageCurrentCounter / 20;
 
-					// print to file
-					outCurrent.println(i + " " + pidOutputCurrent);
-					averageCurrentCounter = 0;
+						// print to file
+						outCurrent.println(i + " " + pidOutputCurrent);
+						averageCurrentCounter = 0;
+					}
+				} else if (averageCurrent == false && showCurrent == true) {
+					outCurrent.println(i + " " + (inputCurrent));
 				}
-			} else if (averageCurrent == false) {
-				outCurrent.println(i + " " + (inputCurrent));
 			}
 
 			// outPosition.println(i + " " + (position));
