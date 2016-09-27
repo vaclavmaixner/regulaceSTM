@@ -7,10 +7,10 @@ import java.util.Random;
 public class Main {
 	public static void main(String[] args) throws IOException {
 		// konstanty pid regulatoru
-		final double kp = 0.2;
+		final double kp = 0.0;
 		final double ki = 0.0;
 		final double kd = 0;
-		final double kc = 1;
+		final double kc = 1.0;
 		// parametry smycky
 		int iterations = 20;
 		double pixels = 512;
@@ -24,7 +24,7 @@ public class Main {
 		filter1.initializeFilterP();
 		Surface corrugation = new Surface();
 		// parametry povrchu
-		double level = 2.0;
+		double level = 1.5;
 		double levelPrevious = level;
 		double levelHeightened = level + (1.0 / 3.0);
 		double setpointDistance = 0;
@@ -37,31 +37,39 @@ public class Main {
 		PrintWriter outCurrent = new PrintWriter("results3/current.txt");
 		PrintWriter outFilter = new PrintWriter("results3/filter.txt");
 		PrintWriter outFilterP = new PrintWriter("results3/filterP.txt");
+		PrintWriter outPositionFA = new PrintWriter("results3/hrotFA.txt");
+		PrintWriter outCurrentFA = new PrintWriter("results3/proudFA.txt");
 		// pocatecni parametry hrotu a vazby
-		double position = 10.0;
-		final double setpointCurrent = 1;
+		double position = 3.0;
+		final double setpointCurrent = 0.6;
 		double inputCurrent = pid1.convertZToCurrent((position - level), kc);
 		// inicializace promennych pro filtry
 		double averageOutputCounter = 0;
 		double averageCurrentCounter = 0;
 		double pidOutputFiltered = 0;
 		double positionFiltered = 0;
+		double averageOutputCounterF = 0;
+		double averageCurrentCounterF = 0;
 
 		// rozhodnuti o filtrovani
-		// dodelat overlap
-		boolean whiteNoise = false;
-		boolean filter = false;
-		boolean filterP = false;
+		boolean whiteNoise = true;
+		boolean filter = true;
+		boolean filterP = true;
 		boolean average = false;
 		boolean averageCurrent = false;
 		boolean overlap = false;
-		boolean corrugationB = false;
-		boolean molecule = false;
-		boolean cutOffStart = true;
-		boolean showCurrent = false;
+		boolean corrugationB = true;
+		boolean molecule = true;
+		boolean cutOffStart = false;
+		boolean showCurrent = true;
+		boolean averageFiltered = true;
+
+		// zacatek gui
 
 		// hlavni smycka
 		for (int i = 1; i <= (numberOfSteps); i++) {
+			// counter pro average
+			counter += 1;
 
 			// schod
 			if ((i >= Math.round((numberOfSteps / 100) * 40))
@@ -141,7 +149,7 @@ public class Main {
 			}
 
 			// hustota filtru
-			int numberEntry = 4;
+			int numberEntry = 3;
 			filter1.setFilterDensity(numberEntry);
 
 			if ((!cutOffStart) || (cutOffStart && i >= 100)) {
@@ -159,7 +167,7 @@ public class Main {
 				}
 
 				// ruzne druhy vystupu
-				if (average == false) {
+				if (average == false && averageFiltered == false) {
 
 					System.out.println(i + " " + position + " "
 							+ setpointDistance);
@@ -183,7 +191,8 @@ public class Main {
 				}
 
 				// funkce prumerovani proudu
-				if (averageCurrent == true && showCurrent == true) {
+				if (averageCurrent == true && showCurrent == true
+						&& averageFiltered == false) {
 					averageCurrentCounter += inputCurrent;
 
 					if ((counter) % (20) == 0) {
@@ -193,8 +202,32 @@ public class Main {
 						outCurrent.println(i + " " + pidOutputCurrent);
 						averageCurrentCounter = 0;
 					}
-				} else if (averageCurrent == false && showCurrent == true) {
+				} else if (averageCurrent == false && showCurrent == true
+						&& averageFiltered == false) {
 					outCurrent.println(i + " " + (inputCurrent));
+				}
+
+				// prumerovani filtrovanych dat
+				if (averageFiltered) {
+					averageOutputCounterF += positionFiltered;
+					averageCurrentCounterF += pidOutputFiltered;
+
+					if ((counter) % (20) == 0) {
+						double positionAverageF = averageOutputCounterF / 20;
+						double pidOutputCurrentF = averageCurrentCounterF / 20;
+
+						// print to file
+						System.out.println(i + " " + (positionAverageF) + " "
+								+ pidOutputCurrentF);
+						outPositionFA.println(i + " " + positionAverageF);
+						outSurface.println(i + " " + setpointDistance);
+						outCurrentFA.println(i + " " + pidOutputCurrentF);
+						averageOutputCounterF = 0;
+						averageCurrentCounterF = 0;
+					} else if (!averageFiltered) {
+						outPosition.println(i + " " + (position));
+						outSurface.println(i + " " + setpointDistance);
+					}
 				}
 			}
 
@@ -209,5 +242,7 @@ public class Main {
 		outCurrent.close();
 		outFilter.close();
 		outFilterP.close();
+		outPositionFA.close();
+		outCurrentFA.close();
 	}
 }
