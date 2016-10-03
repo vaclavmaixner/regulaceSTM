@@ -5,12 +5,43 @@ import java.io.PrintWriter;
 import java.util.Random;
 
 public class Main {
+	// konstanty pid regulatoru
+	public static double kp = 0.0;
+	public static double ki = 0.0;
+	public static double kd = 0;
+	public static double kc = 1.0;
+	// parametry povrchu
+	public static double level = 1.5;
+	public static double setpointDistance = 0;
+	// parametry pro molekulu
+	public static boolean moleculePresent = false;
+	// rozhodnuti o filtrovani
+	public static boolean filter = true;//
+	public static boolean filterP = true;//
+	public static boolean average = false;//
+	public static boolean averageCurrent = false; //
+	public static boolean overlap = false;
+	public static boolean whiteNoise = true; //
+	public static boolean corrugationB = true; //
+	public static boolean molecule = true; //
+	public static boolean cutOffStart = false;
+	public static boolean showCurrent = false;//
+	public static boolean averageFiltered = false;//
+	// pocatecni parametry hrotu a vazby
+	public static double position = 3.0;
+	public static double setpointCurrent = 0.6;
+	public static int numberEntry = 3;
+
 	public static void main(String[] args) throws IOException {
-		// konstanty pid regulatoru
-		final double kp = 0.0;
-		final double ki = 0.0;
-		final double kd = 0;
-		final double kc = 1.0;
+		// zacatek gui
+		Gui gui = new Gui();
+		gui.runGui();
+
+		runMicroscope();
+	}
+
+	public static void runMicroscope() throws IOException {
+
 		// parametry smycky
 		int iterations = 20;
 		double pixels = 512;
@@ -24,24 +55,19 @@ public class Main {
 		filter1.initializeFilterP();
 		Surface corrugation = new Surface();
 		// parametry povrchu
-		double level = 1.5;
 		double levelPrevious = level;
 		double levelHeightened = level + (1.0 / 3.0);
-		double setpointDistance = 0;
 		// parametry pro molekulu
-		boolean moleculePresent = false;
 		double moleculeHeight = (1.0 / 10.0);
 		// inicializace writeru, ktery pise do souboru
-		PrintWriter outPosition = new PrintWriter("results3/hrot.txt");
-		PrintWriter outSurface = new PrintWriter("results3/povrch.txt");
-		PrintWriter outCurrent = new PrintWriter("results3/current.txt");
-		PrintWriter outFilter = new PrintWriter("results3/filter.txt");
-		PrintWriter outFilterP = new PrintWriter("results3/filterP.txt");
-		PrintWriter outPositionFA = new PrintWriter("results3/hrotFA.txt");
-		PrintWriter outCurrentFA = new PrintWriter("results3/proudFA.txt");
+		PrintWriter outPosition = new PrintWriter("PID_results/hrot.txt");
+		PrintWriter outSurface = new PrintWriter("PID_results/povrch.txt");
+		PrintWriter outCurrent = new PrintWriter("PID_results/current.txt");
+		PrintWriter outFilter = new PrintWriter("PID_results/filter.txt");
+		PrintWriter outFilterP = new PrintWriter("PID_results/filterP.txt");
+		PrintWriter outPositionFA = new PrintWriter("PID_results/hrotFA.txt");
+		PrintWriter outCurrentFA = new PrintWriter("PID_results/proudFA.txt");
 		// pocatecni parametry hrotu a vazby
-		double position = 3.0;
-		final double setpointCurrent = 0.6;
 		double inputCurrent = pid1.convertZToCurrent((position - level), kc);
 		// inicializace promennych pro filtry
 		double averageOutputCounter = 0;
@@ -50,21 +76,6 @@ public class Main {
 		double positionFiltered = 0;
 		double averageOutputCounterF = 0;
 		double averageCurrentCounterF = 0;
-
-		// rozhodnuti o filtrovani
-		boolean whiteNoise = true;
-		boolean filter = true;
-		boolean filterP = true;
-		boolean average = false;
-		boolean averageCurrent = false;
-		boolean overlap = false;
-		boolean corrugationB = true;
-		boolean molecule = true;
-		boolean cutOffStart = false;
-		boolean showCurrent = true;
-		boolean averageFiltered = true;
-
-		// zacatek gui
 
 		// hlavni smycka
 		for (int i = 1; i <= (numberOfSteps); i++) {
@@ -149,7 +160,7 @@ public class Main {
 			}
 
 			// hustota filtru
-			int numberEntry = 3;
+
 			filter1.setFilterDensity(numberEntry);
 
 			if ((!cutOffStart) || (cutOffStart && i >= 100)) {
@@ -169,8 +180,8 @@ public class Main {
 				// ruzne druhy vystupu
 				if (average == false && averageFiltered == false) {
 
-					System.out.println(i + " " + position + " "
-							+ setpointDistance);
+					// System.out.println(i + " " + position + " "
+					// + setpointDistance);
 					outPosition.println(i + " " + (position));
 					outSurface.println(i + " " + setpointDistance);
 
@@ -180,9 +191,9 @@ public class Main {
 					if ((counter) % (20) == 0) {
 						double positionAverage = averageOutputCounter / 20;
 						// konzolovej output
-						System.out.print(i + " "); // vytiskne poradnik
-						System.out.println((positionAverage) + " "
-								+ setpointDistance);
+						// System.out.print(i + " "); // vytiskne poradnik
+						// System.out.println((positionAverage) + " "
+						// + setpointDistance);
 
 						// print to file
 						outPosition.println(i + " " + positionAverage);
@@ -217,8 +228,8 @@ public class Main {
 						double pidOutputCurrentF = averageCurrentCounterF / 20;
 
 						// print to file
-						System.out.println(i + " " + (positionAverageF) + " "
-								+ pidOutputCurrentF);
+						// System.out.println(i + " " + (positionAverageF) + " "
+						// + pidOutputCurrentF);
 						outPositionFA.println(i + " " + positionAverageF);
 						outSurface.println(i + " " + setpointDistance);
 						outCurrentFA.println(i + " " + pidOutputCurrentF);

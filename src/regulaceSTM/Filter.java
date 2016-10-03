@@ -1,7 +1,7 @@
 package regulaceSTM;
 
 public class Filter {
-	int entryNo = 12;
+	public static int entryNo = Main.numberEntry;
 	double pidOutputCounter = 0;
 	double pidOutputCounterP = 0;
 	// int counter = 0;
