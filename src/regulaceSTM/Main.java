@@ -1,5 +1,6 @@
 package regulaceSTM;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Random;
@@ -33,11 +34,15 @@ public class Main {
 	public static int numberEntry = 3;
 
 	public static void main(String[] args) throws IOException {
+		File dir = new File("results_PID");
+		dir.mkdir();
+
 		// zacatek gui
 		Gui gui = new Gui();
 		gui.runGui();
 
-		runMicroscope();
+		// runMicroscope();
+		System.out.println(numberEntry);
 	}
 
 	public static void runMicroscope() throws IOException {
@@ -60,13 +65,13 @@ public class Main {
 		// parametry pro molekulu
 		double moleculeHeight = (1.0 / 10.0);
 		// inicializace writeru, ktery pise do souboru
-		PrintWriter outPosition = new PrintWriter("PID_results/hrot.txt");
-		PrintWriter outSurface = new PrintWriter("PID_results/povrch.txt");
-		PrintWriter outCurrent = new PrintWriter("PID_results/current.txt");
-		PrintWriter outFilter = new PrintWriter("PID_results/filter.txt");
-		PrintWriter outFilterP = new PrintWriter("PID_results/filterP.txt");
-		PrintWriter outPositionFA = new PrintWriter("PID_results/hrotFA.txt");
-		PrintWriter outCurrentFA = new PrintWriter("PID_results/proudFA.txt");
+		PrintWriter outPosition = new PrintWriter("results_PID/hrot.txt");
+		PrintWriter outSurface = new PrintWriter("results_PID/povrch.txt");
+		PrintWriter outCurrent = new PrintWriter("results_PID/current.txt");
+		PrintWriter outFilter = new PrintWriter("results_PID/filter.txt");
+		PrintWriter outFilterP = new PrintWriter("results_PID/filterP.txt");
+		PrintWriter outPositionFA = new PrintWriter("results_PID/hrotFA.txt");
+		PrintWriter outCurrentFA = new PrintWriter("results_PID/proudFA.txt");
 		// pocatecni parametry hrotu a vazby
 		double inputCurrent = pid1.convertZToCurrent((position - level), kc);
 		// inicializace promennych pro filtry
@@ -182,7 +187,7 @@ public class Main {
 
 					// System.out.println(i + " " + position + " "
 					// + setpointDistance);
-					outPosition.println(i + " " + (position));
+					outPositionFA.println(i + " " + (position));
 					outSurface.println(i + " " + setpointDistance);
 
 				} else if (average == true) {
@@ -196,7 +201,7 @@ public class Main {
 						// + setpointDistance);
 
 						// print to file
-						outPosition.println(i + " " + positionAverage);
+						outPositionFA.println(i + " " + positionAverage);
 						averageOutputCounter = 0;
 					}
 				}
@@ -210,12 +215,12 @@ public class Main {
 						double pidOutputCurrent = averageCurrentCounter / 20;
 
 						// print to file
-						outCurrent.println(i + " " + pidOutputCurrent);
+						outCurrentFA.println(i + " " + pidOutputCurrent);
 						averageCurrentCounter = 0;
 					}
 				} else if (averageCurrent == false && showCurrent == true
 						&& averageFiltered == false) {
-					outCurrent.println(i + " " + (inputCurrent));
+					outCurrentFA.println(i + " " + (inputCurrent));
 				}
 
 				// prumerovani filtrovanych dat
@@ -236,7 +241,7 @@ public class Main {
 						averageOutputCounterF = 0;
 						averageCurrentCounterF = 0;
 					} else if (!averageFiltered) {
-						outPosition.println(i + " " + (position));
+						outPositionFA.println(i + " " + (position));
 						outSurface.println(i + " " + setpointDistance);
 					}
 				}

@@ -11,11 +11,13 @@ import javax.swing.JCheckBox;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
 public class Gui extends JFrame {
-	final int WIDTH = 500, HEIGHT = 300;
+	final int WIDTH = 500, HEIGHT = 340;
 	public static double userInput;
 
 	public void runGui() {
@@ -57,9 +59,17 @@ public class Gui extends JFrame {
 	}
 
 	private static void placeComponents(JPanel panel) {
-		final int WIDTH = 600, HEIGHT = 600, WINDOWWIDTH = 100, WINDOWHEIGHT = 25;
+		final int WIDTH = 500, HEIGHT = 340, WINDOWWIDTH = 100, WINDOWHEIGHT = 25;
 		final int LABELWIDTH = 160;
 		panel.setLayout(null);
+
+		JMenuBar menuBar = new JMenuBar();
+		menuBar.setBounds(0, 0, WIDTH, 20);
+		menuBar.add(new JMenuItem("Menu Item"));
+		panel.add(menuBar);
+
+		menuBar.add(new JMenuItem("Menu Item 1"));
+		menuBar.add(new JMenuItem("Menu Item 2"));
 
 		JLabel leftWindow = new JLabel();
 		leftWindow.setBounds(5, 5, 280, 185);
@@ -119,27 +129,29 @@ public class Gui extends JFrame {
 		runButton.setBounds(WIDTH - 100, HEIGHT - 45, 80, 25);
 		panel.add(runButton);
 
-		JCheckBox whiteNoiseBox = new JCheckBox("Zašumění proudu");
+		// zaskrtavaci cudliky
+		JCheckBox whiteNoiseBox = new JCheckBox("Zašumění proudu", true);
 		whiteNoiseBox.setBounds(300, 10, 200, 20);
 		panel.add(whiteNoiseBox);
 
-		JCheckBox corrugationBBox = new JCheckBox("Korugace povrchu");
+		JCheckBox corrugationBBox = new JCheckBox("Korugace povrchu", true);
 		corrugationBBox.setBounds(300, 40, 200, 20);
 		panel.add(corrugationBBox);
 
-		JCheckBox moleculeBox = new JCheckBox("Bzukající molekula");
+		JCheckBox moleculeBox = new JCheckBox("Bzukající molekula", true);
 		moleculeBox.setBounds(300, 70, 200, 20);
 		panel.add(moleculeBox);
 
-		JCheckBox showCurrentBox = new JCheckBox("Vypisovat proud");
+		JCheckBox showCurrentBox = new JCheckBox("Vypisovat proud", true);
 		showCurrentBox.setBounds(300, 100, 200, 20);
 		panel.add(showCurrentBox);
 
-		JCheckBox filterBox = new JCheckBox("Filtr pozice hrotu");
+		JCheckBox filterBox = new JCheckBox("Filtr pozice hrotu", true);
 		filterBox.setBounds(300, 130, 200, 20);
+		filterBox.setSelected(true);
 		panel.add(filterBox);
 
-		JCheckBox filterPBox = new JCheckBox("Filtr proudu");
+		JCheckBox filterPBox = new JCheckBox("Filtr proudu", true);
 		filterPBox.setBounds(300, 160, 200, 20);
 		panel.add(filterPBox);
 
@@ -151,7 +163,7 @@ public class Gui extends JFrame {
 		averageCurrentBox.setBounds(300, 220, 200, 20);
 		panel.add(averageCurrentBox);
 
-		JCheckBox averageFilteredBox = new JCheckBox("Reálný výstup");
+		JCheckBox averageFilteredBox = new JCheckBox("Reálný výstup", true);
 		averageFilteredBox.setBounds(300, 250, 200, 20);
 		panel.add(averageFilteredBox);
 
@@ -166,6 +178,7 @@ public class Gui extends JFrame {
 					.getText());
 			Main.numberEntry = (int) Double.parseDouble(numberEntryText
 					.getText());
+			System.out.println(Main.numberEntry);
 
 			if (whiteNoiseBox.isSelected()) {
 				Main.whiteNoise = true;
